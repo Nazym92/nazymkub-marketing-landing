@@ -48,7 +48,6 @@ leadFrame.addEventListener('load',()=>{
  leadFrameFallback=window.setTimeout(()=>finishLead(true),700);
 });
 window.addEventListener('message',(event)=>{
- if(event.source!==leadFrame.contentWindow)return;
  const result=event.data;
  if(!result||result.type!=='google_ads_lead')return;
  finishLead(Boolean(result.success));
