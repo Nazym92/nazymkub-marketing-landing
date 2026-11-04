@@ -29,7 +29,7 @@ const leadForm=document.getElementById('lead-form');
 const leadStatus=document.getElementById('lead-status');
 const leadSubmit=document.getElementById('lead-submit');
 window.addEventListener('message',(event)=>{
- if(event.origin!=='https://script.google.com')return;
+ if(event.source!==document.getElementById('lead-submit-frame').contentWindow)return;
  const result=event.data;
  if(!result||result.type!=='google_ads_lead')return;
  leadSubmit.disabled=false;
