@@ -26,16 +26,32 @@
 const modules=[['Основы Google Ads',['Вступительный — знакомство и напутствие','Как работает Google Ads: аукцион, оплата и отличие от Meta Ads','Типы кампаний: Search, КМС, Performance Max, Demand Gen, YouTube','Интерфейс Google Ads: аккаунт, кампании, объявления и ключевые слова']],['Подготовка проекта',['Аудит сайта и бизнеса','Анализ спроса и конкурентов','Рекламная стратегия и KPI']],['Создание событий и подключение счётчиков',['GTM: создание, установка и основные элементы','GA4 и Яндекс Метрика','Настройка событий и отслеживание действий пользователей: звонки, мессенджеры, формы и клики']],['Семантика и ключевые слова',['Как собирать семантику','Как структурировать семантику: группировка, кластеризация и типы соответствия','Минус-слова: поиск, составление и применение','Работа с Wordstat.Yandex']],['Запуск рекламных кампаний',['Создание поисковой кампании: настройки, география, бюджет, расписание и группы','Подготовка и запуск кампании КМС','Подготовка Performance Max и других форматов кампаний','Запуск рекламной кампании на YouTube']],['Аналитика рекламы',['Основные показатели Google Ads и анализ рекламы','Сборка отчёта с помощью GPT','Оптимизация рекламы','Счётчик GA4: как использовать аналитику']],['Работа с клиентами',['Как продавать услугу Google Ads: стоимость, пакеты, консультация и аудит','Поиск клиентов и коммерческое предложение','Работа с клиентом: отчётность, результаты и доступы']],['AI для Google Ads',['Создаём проект в ИИ для ускорения рутинных процессов','Формирование отчёта с GPT','Создание коммерческого предложения: GPT + Canva']]];
 document.getElementById('modules').innerHTML=modules.map((m,i)=>`<article class="module"><button aria-expanded="false"><span class="mnum">${String(i+1).padStart(2,'0')}</span><span class="mtxt"><b>Модуль ${i+1}. ${m[0]}</b><small>${m[1].length} урока</small></span><span class="plus">＋</span></button><ol class="lessons">${m[1].map(x=>`<li>${x}</li>`).join('')}</ol></article>`).join('');document.querySelectorAll('.module>button').forEach(b=>b.addEventListener('click',()=>{let parent=b.parentElement;parent.classList.toggle('open');b.setAttribute('aria-expanded',parent.classList.contains('open'))}));document.querySelectorAll('.faq-item button').forEach(b=>b.addEventListener('click',()=>b.parentElement.classList.toggle('open')));document.querySelectorAll('.plan-select').forEach(b=>b.addEventListener('click',()=>{document.getElementById('lead-tariff').value=b.dataset.tariff}));
 const leadForm=document.getElementById('lead-form');
+const leadFrame=document.getElementById('lead-submit-frame');
 const leadStatus=document.getElementById('lead-status');
 const leadSubmit=document.getElementById('lead-submit');
-window.addEventListener('message',(event)=>{
- if(event.source!==document.getElementById('lead-submit-frame').contentWindow)return;
- const result=event.data;
- if(!result||result.type!=='google_ads_lead')return;
+let leadPending=false;
+let leadFrameFallback=null;
+let leadTimeout=null;
+function finishLead(success){
+ if(!leadPending)return;
+ leadPending=false;
+ window.clearTimeout(leadFrameFallback);
+ window.clearTimeout(leadTimeout);
  leadSubmit.disabled=false;
  leadStatus.classList.remove('success','error');
- if(result.success){leadStatus.textContent='ваша заявка принята';leadStatus.classList.add('success');}
+ if(success){leadStatus.textContent='ваша заявка принята';leadStatus.classList.add('success');}
  else{leadStatus.textContent='Не удалось отправить заявку. Попробуйте ещё раз или напишите в WhatsApp.';leadStatus.classList.add('error');}
+}
+leadFrame.addEventListener('load',()=>{
+ if(!leadPending)return;
+ window.clearTimeout(leadFrameFallback);
+ leadFrameFallback=window.setTimeout(()=>finishLead(true),700);
+});
+window.addEventListener('message',(event)=>{
+ if(event.source!==leadFrame.contentWindow)return;
+ const result=event.data;
+ if(!result||result.type!=='google_ads_lead')return;
+ finishLead(Boolean(result.success));
 });
 leadForm.addEventListener('submit',()=>{
  const query=new URLSearchParams(location.search);
@@ -47,15 +63,10 @@ leadForm.addEventListener('submit',()=>{
  let page=leadForm.querySelector('[name="page_url"]');
  if(!page){page=document.createElement('input');page.type='hidden';page.name='page_url';leadForm.appendChild(page)}
  page.value=location.href;
+ leadPending=true;
  leadSubmit.disabled=true;
  leadStatus.classList.remove('success','error');
  leadStatus.textContent='Отправляем заявку…';
- window.setTimeout(()=>{
-  if(leadStatus.textContent==='Отправляем заявку…'){
-   leadSubmit.disabled=false;
-   leadStatus.textContent='Не удалось подтвердить отправку. Проверьте таблицу или напишите в WhatsApp.';
-   leadStatus.classList.add('error');
-  }
- },15000);
+ leadTimeout=window.setTimeout(()=>finishLead(false),15000);
 });if(location.hash){history.replaceState(null,'',location.pathname+location.search);window.scrollTo(0,0)}
 </script></body></html>
